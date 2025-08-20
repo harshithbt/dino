@@ -13,6 +13,7 @@ App(
       isDarkMode: false,
       textSizeModifier: 0,
       scaleFactor: 0.7, // Default scale factor for game elements
+      isVribrationEnabled: true, // Default vibration setting
     },
     onCreate(options) {
       vis.log('app on create invoke')
@@ -24,6 +25,7 @@ App(
         this.globalData.isDarkMode = localStorage.getItem('dino_is_dark_mode')
         this.globalData.textSizeModifier = parseFloat(localStorage.getItem('dino_text_size_modifier')) || 1;
         this.globalData.scaleFactor = parseFloat(localStorage.getItem('dino_scale_factor')) || 0.7;
+        this.globalData.isVribrationEnabled = localStorage.getItem('dino_is_vibration_enabled') === true;
       } catch (e) {
         vis.log('No saved high score found');
       }
@@ -36,6 +38,7 @@ App(
         localStorage.setItem('dino_is_dark_mode', this.globalData.isDarkMode ? true : false);
         localStorage.setItem('dino_text_size_modifier', this.globalData.textSizeModifier.toString());
         localStorage.setItem('dino_scale_factor', this.globalData.scaleFactor.toString());
+        localStorage.setItem('dino_is_vibration_enabled', this.globalData.isVribrationEnabled ? true : false);
       } catch (e) {
         vis.log('Failed to save high score');
       }
