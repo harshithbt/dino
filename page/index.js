@@ -160,7 +160,7 @@ Page(
     handleInput(info) {
       const { x, y } = info
       if (gameState === 'menu') {
-        const startText = 'Start Game'
+        const startText = getText('startBtnTxt')
         const startTextLayout = getTextLayout(startText, {
           text_size: TEXT_SIZES.INSTRUCTIONS * textSizeModifier,
           text_width: SCREEN_WIDTH,
@@ -169,11 +169,11 @@ Page(
         const startTextWidth = startTextLayout.width
         const startButtonX1 = (SCREEN_WIDTH - startTextWidth) / 2 - BUTTON_PADDING
         const startButtonX2 = (SCREEN_WIDTH + startTextWidth) / 2 + BUTTON_PADDING
-        const startButtonY1 = SCREEN_HEIGHT / 2 + 60
+        const startButtonY1 = SCREEN_HEIGHT / 2 + 70
         const startButtonY2 = startButtonY1 + startTextLayout.height + BUTTON_PADDING
 
         // Settings button coordinates
-        const settingsText = 'Settings'
+        const settingsText = getText('settingBtnTxt')
         const settingsTextLayout = getTextLayout(settingsText, {
           text_size: TEXT_SIZES.INSTRUCTIONS * textSizeModifier,
           text_width: SCREEN_WIDTH,
@@ -182,7 +182,7 @@ Page(
         const settingsTextWidth = settingsTextLayout.width
         const settingsButtonX1 = (SCREEN_WIDTH - settingsTextWidth) / 2 - BUTTON_PADDING
         const settingsButtonX2 = (SCREEN_WIDTH + settingsTextWidth) / 2 + BUTTON_PADDING
-        const settingsButtonY1 = SCREEN_HEIGHT / 2 + 110
+        const settingsButtonY1 = SCREEN_HEIGHT / 2 + 140
         const settingsButtonY2 = settingsButtonY1 + settingsTextLayout.height + BUTTON_PADDING
 
         // Check for button clicks
@@ -573,22 +573,12 @@ Page(
         color: fontColor,
       })
 
-      const instructions = getText('instructions')
-      const instructionsWidth = getTextWidthAndHeight(instructions, TEXT_SIZES.INSTRUCTIONS * textSizeModifier).width
-      canvas.drawText({
-        x: (SCREEN_WIDTH - instructionsWidth) / 2,
-        y: SCREEN_HEIGHT / 2,
-        text: instructions,
-        text_size: TEXT_SIZES.INSTRUCTIONS * textSizeModifier,
-        color: fontColor,
-      })
-
       if (highScore > 0) {
         const highScoreText = `${getText('highScoreText')} ${Math.floor(highScore)}`
         const highScoreWidth = getTextWidthAndHeight(highScoreText, TEXT_SIZES.HIGH_SCORE * textSizeModifier).width
         canvas.drawText({
           x: (SCREEN_WIDTH - highScoreWidth) / 2,
-          y: SCREEN_HEIGHT / 2 + 30,
+          y: SCREEN_HEIGHT / 2 + 20,
           text: highScoreText,
           text_size: TEXT_SIZES.HIGH_SCORE * textSizeModifier,
           color: fontColor,
@@ -603,7 +593,7 @@ Page(
         wrapped: 0
       })
       const startTextWidth = startTextLayout.width
-      const startButtonY = SCREEN_HEIGHT / 2 + 60
+      const startButtonY = SCREEN_HEIGHT / 2 + 70
       const startButtonHeight = startTextLayout.height
 
       canvas.drawRect({
@@ -632,7 +622,7 @@ Page(
         wrapped: 0
       })
       const settingsTextWidth = settingsTextLayout.width
-      const settingsButtonY = SCREEN_HEIGHT / 2 + 110
+      const settingsButtonY = SCREEN_HEIGHT / 2 + 140
       const settingsButtonHeight = settingsTextLayout.height
 
       canvas.drawRect({
@@ -696,7 +686,7 @@ Page(
         const newHighScoreWidth = getTextWidthAndHeight(newHighScoreText, TEXT_SIZES.SCORE * textSizeModifier).width
         canvas.drawText({
           x: (SCREEN_WIDTH - newHighScoreWidth) / 2,
-          y: SCREEN_HEIGHT / 2 + 30,
+          y: SCREEN_HEIGHT / 2 - 60,
           text: newHighScoreText,
           text_size: TEXT_SIZES.SCORE * textSizeModifier,
           color: FONT_COLORS.HIGHLIGHT,
