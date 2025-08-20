@@ -238,7 +238,7 @@ Page(
 
     handleScreenRelease() {
       isScreenPressed = false
-      if (gameState === 'playing' && tRex.isDucking) {
+      if (gameState === 'playing' && tRex.isDucking && !isSelectPressed) {
         tRex.isDucking = false
         tRex.height = 94 * SCALE_FACTOR
         tRex.y = GROUND_Y
@@ -966,7 +966,11 @@ onKey({
       if (!pageInstance) return true;
       if (gameState === 'playing') {
         isSelectPressed = false;
-        pageInstance.handleScreenRelease();
+        if (tRex.isDucking && !isScreenPressed) {
+          tRex.isDucking = false;
+          tRex.height = 94 * SCALE_FACTOR;
+          tRex.y = GROUND_Y;
+        }
         return true;
       }
     } else if (key === KEY_BACK && keyEvent === KEY_EVENT_CLICK) {
