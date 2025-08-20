@@ -34,16 +34,18 @@ function getTextWidthAndHeight(text, fontSize) {
 const FPS = 60
 const FRAME_DURATION = 1000 / FPS
 
-// Adjusted T-Rex game constants for better feel
-const GAME_SPEED = 10 * SCALE_FACTOR
-const GRAVITY = 1.0 * SCALE_FACTOR
-const JUMP_FORCE = -18 * SCALE_FACTOR
+// Base values (will be scaled with game speed)
+const BASE_GAME_SPEED = 8 * SCALE_FACTOR
+const BASE_GRAVITY = 0.8 * SCALE_FACTOR
+const BASE_JUMP_FORCE = -16 * SCALE_FACTOR
+
+const MAX_GAME_SPEED = 20 * SCALE_FACTOR
 const GROUND_Y = SCREEN_HEIGHT - 120 * SCALE_FACTOR
 const T_REX_X = 80 * SCALE_FACTOR
 const CLOUD_SPAWN_RATE = 0.01
-const BASE_OBSTACLE_SPAWN_RATE = 0.01
+const BASE_OBSTACLE_SPAWN_RATE = 0.015
 const SPEED_INCREMENT_SCORE_INTERVAL = 100
-const SPEED_INCREMENT = 1.0 * SCALE_FACTOR
+const SPEED_INCREMENT = 0.2 * SCALE_FACTOR  // Reduced speed increment
 
 // Input state tracking
 let isSelectPressed = false
@@ -73,7 +75,7 @@ const BUTTON_PADDING = 6; // Increased padding for a larger button
 
 // Game state
 let gameState = 'menu'
-let gameSpeed = GAME_SPEED
+let gameSpeed = BASE_GAME_SPEED 
 let score = 0
 let highScore = 0
 let gameTimer = null
@@ -279,7 +281,7 @@ Page(
     startGame() {
       gameState = 'playing'
       score = 0
-      gameSpeed = GAME_SPEED
+      gameSpeed = BASE_GAME_SPEED  // Use BASE_GAME_SPEED here
       lastSpeedIncreaseScore = 0
 
       // Reset all T-Rex properties to their initial state
@@ -308,9 +310,14 @@ Page(
       }, 25000)
     },
 
+
     jump() {
       if (!tRex.isJumping && !tRex.isDead && !tRex.isDucking) {
-        tRex.velocityY = JUMP_FORCE
+        // Calculate scaled jump force based on current game speed
+        const speedRatio = gameSpeed / BASE_GAME_SPEED
+        const scaledJumpForce = BASE_JUMP_FORCE * speedRatio
+
+        tRex.velocityY = scaledJumpForce
         tRex.isJumping = true
         isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
       }
@@ -354,18 +361,17 @@ Page(
       groundOffset = (groundOffset + gameSpeed) % (2404 * SCALE_FACTOR)
       score += 0.1
 
-      // Speed increase logic
+      // Gradual speed increase with cap
       if (Math.floor(score / SPEED_INCREMENT_SCORE_INTERVAL) > Math.floor(lastSpeedIncreaseScore / SPEED_INCREMENT_SCORE_INTERVAL)) {
-        gameSpeed += SPEED_INCREMENT;
+        gameSpeed = Math.min(MAX_GAME_SPEED, gameSpeed + SPEED_INCREMENT);
         lastSpeedIncreaseScore = score;
       }
 
-      const lastObstacle = obstacles[obstacles.length - 1];
-      const minDistance = 100 * SCALE_FACTOR + (Math.random() * 50 * SCALE_FACTOR);
-      if (!lastObstacle || SCREEN_WIDTH - lastObstacle.x > minDistance) {
-        if (Math.random() < BASE_OBSTACLE_SPAWN_RATE) {
-          this.spawnObstacle();
-        }
+      // Dynamic obstacle spawn rate based on score
+      const dynamicSpawnRate = BASE_OBSTACLE_SPAWN_RATE + (score / 10000);
+
+      if (Math.random() < dynamicSpawnRate) {
+        this.spawnObstacle();
       }
 
       if (Math.random() < CLOUD_SPAWN_RATE) this.spawnCloud()
@@ -373,6 +379,11 @@ Page(
     },
 
     updateTRex() {
+      // Calculate scaled physics values based on current game speed
+      const speedRatio = gameSpeed / BASE_GAME_SPEED
+      const scaledGravity = BASE_GRAVITY * speedRatio
+      const scaledJumpForce = BASE_JUMP_FORCE * speedRatio
+
       // Handle ducking logic
       if (!tRex.isJumping && !tRex.isDead && gameState === 'playing') {
         if (isSelectPressed || isScreenPressed) {
@@ -394,7 +405,8 @@ Page(
         }
       }
 
-      tRex.velocityY += GRAVITY
+      // Use scaled physics values
+      tRex.velocityY += scaledGravity
       tRex.y += tRex.velocityY
       if (tRex.y >= GROUND_Y) {
         tRex.y = GROUND_Y
@@ -428,8 +440,20 @@ Page(
     },
 
     spawnObstacle() {
-      const obstacleType = (Math.random() < 0.7 || score < 500) ? 'cactus' : 'bird';
+      const obstacleType = (Math.random() < 0.7 || score < 100) ? 'cactus' : 'bird';
       let obstacle;
+
+      // Calculate minimum distance based on game speed
+      const minDistance = Math.max(
+        250 * SCALE_FACTOR, // Minimum distance
+        350 * SCALE_FACTOR - (gameSpeed * 5) // Decreases slightly with speed
+      );
+
+      // Check if we have enough distance from last obstacle
+      const lastObstacle = obstacles[obstacles.length - 1];
+      if (lastObstacle && (SCREEN_WIDTH - lastObstacle.x) < minDistance) {
+        return; // Don't spawn if too close
+      }
 
       if (obstacleType === 'cactus') {
         const smallCactus = [
@@ -455,13 +479,11 @@ Page(
           image: cactusImage.img
         };
       } else {
-        // Bird
-        // Dynamic bird heights like original Chrome Dino
+        // Bird - with more varied heights
         const birdHeights = [
-          50 * SCALE_FACTOR,   // Low flying
-          75 * SCALE_FACTOR,   // Medium flying  
-          100 * SCALE_FACTOR,  // High flying
-          125 * SCALE_FACTOR   // Very high flying
+          70 * SCALE_FACTOR,   // Low flying
+          100 * SCALE_FACTOR,  // Medium flying  
+          130 * SCALE_FACTOR,  // High flying
         ]
         const randomHeight = birdHeights[Math.floor(Math.random() * birdHeights.length)]
         obstacle = {
@@ -474,7 +496,7 @@ Page(
         };
       }
       obstacles.push(obstacle);
-      lastObstacleX = SCREEN_WIDTH;
+      lastObstacleX = obstacle.x;
     },
 
     spawnCloud() {
