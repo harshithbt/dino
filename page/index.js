@@ -4,7 +4,7 @@ import VisLog from "@silver-zepp/vis-log"
 import { createWidget, widget, event } from '@zos/ui'
 import { Vibrator } from '@zos/sensor'
 import { setPageBrightTime, resetPageBrightTime } from '@zos/display'
-import { getDeviceInfo, SCREEN_SHAPE_SQUARE } from '@zos/device'
+import { getDeviceInfo } from '@zos/device'
 import { push } from '@zos/router'
 import { getTextLayout } from '@zos/ui'
 import { setStatusBarVisible } from '@zos/ui'
@@ -15,7 +15,7 @@ const vis = new VisLog("index.js");
 vis.updateSettings({ visual_log_enabled: false });
 const vibrator = new Vibrator()
 const vibrationType = vibrator.getType()
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT, screenShape } = getDeviceInfo()
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = getDeviceInfo()
 
 const DEBUG_HITBOX = false // <-- Turn to false to hide hitboxes
 
@@ -31,7 +31,6 @@ function getTextWidthAndHeight(text, fontSize) {
 }
 
 // Game constants
-const SCREEN_SHAPE = screenShape === SCREEN_SHAPE_SQUARE ? 'square' : 'round'
 const FPS = 60
 const FRAME_DURATION = 1000 / FPS
 
@@ -53,6 +52,7 @@ let isScreenPressed = false
 // UI and Settings
 let isDarkMode = false
 let textSizeModifier = 1
+let isVribrationEnabled = true
 const TEXT_SIZES = {
   TITLE: 28,
   INSTRUCTIONS: 20,
@@ -69,6 +69,7 @@ const BACKGROUND_COLORS = {
   LIGHT: 0xf7f7f7,
   DARK: 0x363636
 }
+const BUTTON_PADDING = 6; // Increased padding for a larger button
 
 // Game state
 let gameState = 'menu'
@@ -116,6 +117,7 @@ Page(
       isDarkMode = app.globalData.isDarkMode || false
       textSizeModifier = app.globalData.textSizeModifier || 1
       SCALE_FACTOR = app.globalData.scaleFactor || 0.7
+      isVribrationEnabled = app.globalData.isVribrationEnabled !== undefined ? app.globalData.isVribrationEnabled : true
       this.initializeGame()
       pageInstance = this
     },
@@ -131,6 +133,7 @@ Page(
       app.globalData.isDarkMode = isDarkMode
       app.globalData.textSizeModifier = textSizeModifier
       app.globalData.scaleFactor = SCALE_FACTOR
+      app.globalData.isVribrationEnabled = isVribrationEnabled
       resetPageBrightTime()
     },
 
@@ -145,11 +148,11 @@ Page(
         this.handleInput(info)
         this.handleScreenRelease()
       })
-      
+
       canvas.addEventListener(event.CLICK_DOWN, (info) => {
         this.handleScreenPress(info)
       })
-      
+
       this.startGameLoop()
       this.drawMenu()
     },
@@ -164,10 +167,10 @@ Page(
           wrapped: 0
         })
         const startTextWidth = startTextLayout.width
-        const startButtonX1 = (SCREEN_WIDTH - startTextWidth) / 2 - 10
-        const startButtonX2 = (SCREEN_WIDTH + startTextWidth) / 2 + 10
+        const startButtonX1 = (SCREEN_WIDTH - startTextWidth) / 2 - BUTTON_PADDING
+        const startButtonX2 = (SCREEN_WIDTH + startTextWidth) / 2 + BUTTON_PADDING
         const startButtonY1 = SCREEN_HEIGHT / 2 + 60
-        const startButtonY2 = startButtonY1 + startTextLayout.height
+        const startButtonY2 = startButtonY1 + startTextLayout.height + BUTTON_PADDING
 
         // Settings button coordinates
         const settingsText = 'Settings'
@@ -177,17 +180,19 @@ Page(
           wrapped: 0
         })
         const settingsTextWidth = settingsTextLayout.width
-        const settingsButtonX1 = (SCREEN_WIDTH - settingsTextWidth) / 2 - 10
-        const settingsButtonX2 = (SCREEN_WIDTH + settingsTextWidth) / 2 + 10
+        const settingsButtonX1 = (SCREEN_WIDTH - settingsTextWidth) / 2 - BUTTON_PADDING
+        const settingsButtonX2 = (SCREEN_WIDTH + settingsTextWidth) / 2 + BUTTON_PADDING
         const settingsButtonY1 = SCREEN_HEIGHT / 2 + 110
-        const settingsButtonY2 = settingsButtonY1 + settingsTextLayout.height
+        const settingsButtonY2 = settingsButtonY1 + settingsTextLayout.height + BUTTON_PADDING
 
         // Check for button clicks
         if (x > startButtonX1 && x < startButtonX2 && y > startButtonY1 && y < startButtonY2) {
           this.startGame()
+          isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
         } else if (x > settingsButtonX1 && x < settingsButtonX2 && y > settingsButtonY1 && y < settingsButtonY2) {
           // Placeholder for settings page logic
           this.navigateToSettings()
+          isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
         }
       } else if (gameState === 'playing') {
         this.jump()
@@ -200,13 +205,14 @@ Page(
           wrapped: 0
         })
         const restartTextWidth = restartTextLayout.width
-        const restartButtonX1 = (SCREEN_WIDTH - restartTextWidth) / 2 - 10
-        const restartButtonX2 = (SCREEN_WIDTH + restartTextWidth) / 2 + 10
+        const restartButtonX1 = (SCREEN_WIDTH - restartTextWidth) / 2 - BUTTON_PADDING
+        const restartButtonX2 = (SCREEN_WIDTH + restartTextWidth) / 2 + BUTTON_PADDING
         const restartButtonY1 = SCREEN_HEIGHT / 2 + 60
-        const restartButtonY2 = restartButtonY1 + restartTextLayout.height
+        const restartButtonY2 = restartButtonY1 + restartTextLayout.height + BUTTON_PADDING
 
         if (x > restartButtonX1 && x < restartButtonX2 && y > restartButtonY1 && y < restartButtonY2) {
           this.restartGame()
+          isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
         }
       } else if (gameState === 'paused') {
         // Resume button coordinates
@@ -217,14 +223,15 @@ Page(
           wrapped: 0
         });
         const resumeTextWidth = resumeTextLayout.width;
-        const resumeButtonX1 = (SCREEN_WIDTH - resumeTextWidth) / 2 - 10;
-        const resumeButtonX2 = (SCREEN_WIDTH + resumeTextWidth) / 2 + 10;
+        const resumeButtonX1 = (SCREEN_WIDTH - resumeTextWidth) / 2 - BUTTON_PADDING;
+        const resumeButtonX2 = (SCREEN_WIDTH + resumeTextWidth) / 2 + BUTTON_PADDING;
         const resumeButtonY1 = SCREEN_HEIGHT / 2 + 30;
-        const resumeButtonY2 = resumeButtonY1 + resumeTextLayout.height;
+        const resumeButtonY2 = resumeButtonY1 + resumeTextLayout.height + BUTTON_PADDING;
 
         // Check for resume button click
         if (x > resumeButtonX1 && x < resumeButtonX2 && y > resumeButtonY1 && y < resumeButtonY2) {
           this.resumeGame();
+          isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
         }
       }
     },
@@ -274,17 +281,26 @@ Page(
       score = 0
       gameSpeed = GAME_SPEED
       lastSpeedIncreaseScore = 0
+
+      // Reset all T-Rex properties to their initial state
       tRex.y = GROUND_Y
+      tRex.height = 94 * SCALE_FACTOR
       tRex.velocityY = 0
       tRex.isJumping = false
       tRex.isDucking = false
       tRex.isDead = false
       tRex.animFrame = 0
+
       flyBird.animFrame = 0
       obstacles = []
       clouds = []
       groundOffset = 0
       lastObstacleX = 0
+
+      // Reset input state variables
+      isSelectPressed = false
+      isScreenPressed = false
+
       vis.log('Game started!')
       if (brightTimer) clearInterval(brightTimer)
       brightTimer = setInterval(() => {
@@ -296,7 +312,7 @@ Page(
       if (!tRex.isJumping && !tRex.isDead && !tRex.isDucking) {
         tRex.velocityY = JUMP_FORCE
         tRex.isJumping = true
-        vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
+        isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
       }
     },
 
@@ -310,13 +326,17 @@ Page(
       tRex.velocityY = 0
       if (score > highScore) {
         highScore = score
-        vibrator.start([{ type: vibrationType.STRONG_SHORT, duration: 100 }])
+        isVribrationEnabled && vibrator.start([{ type: vibrationType.STRONG_SHORT, duration: 100 }])
       } else {
-        vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 50 }])
+        isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 50 }])
       }
       vis.log(`Game Over! Score: ${score}, High Score: ${highScore}`)
       if (brightTimer) clearInterval(brightTimer)
       resetPageBrightTime()
+
+      // Add these lines to reset the input state
+      isSelectPressed = false
+      isScreenPressed = false
     },
 
     startGameLoop() {
@@ -381,13 +401,13 @@ Page(
         tRex.velocityY = 0
         tRex.isJumping = false
       }
-      
+
       if (!tRex.isJumping && !tRex.isDucking && !tRex.isDead) {
         tRex.animFrame = (tRex.animFrame + 0.3) % 2
       } else if (tRex.isDucking && !tRex.isDead) {
         tRex.animFrame = (tRex.animFrame + 0.3) % 2
       }
-      
+
       if (!tRex.isDead) {
         flyBird.animFrame = (flyBird.animFrame + 0.2) % 2
       }
@@ -587,10 +607,10 @@ Page(
       const startButtonHeight = startTextLayout.height
 
       canvas.drawRect({
-        x1: (SCREEN_WIDTH - startTextWidth) / 2 - 10,
-        y1: startButtonY,
-        x2: (SCREEN_WIDTH + startTextWidth) / 2 + 10,
-        y2: startButtonY + startButtonHeight,
+        x1: (SCREEN_WIDTH - startTextWidth) / 2 - BUTTON_PADDING,
+        y1: startButtonY - (BUTTON_PADDING / 2),
+        x2: (SCREEN_WIDTH + startTextWidth) / 2 + BUTTON_PADDING,
+        y2: startButtonY + startButtonHeight + (BUTTON_PADDING / 2),
         radius: 10,
         color: FONT_COLORS.HIGHLIGHT,
         fill_color: FONT_COLORS.HIGHLIGHT
@@ -616,10 +636,10 @@ Page(
       const settingsButtonHeight = settingsTextLayout.height
 
       canvas.drawRect({
-        x1: (SCREEN_WIDTH - settingsTextWidth) / 2 - 10,
-        y1: settingsButtonY,
-        x2: (SCREEN_WIDTH + settingsTextWidth) / 2 + 10,
-        y2: settingsButtonY + settingsButtonHeight,
+        x1: (SCREEN_WIDTH - settingsTextWidth) / 2 - BUTTON_PADDING,
+        y1: settingsButtonY - (BUTTON_PADDING / 2),
+        x2: (SCREEN_WIDTH + settingsTextWidth) / 2 + BUTTON_PADDING,
+        y2: settingsButtonY + settingsButtonHeight + (BUTTON_PADDING / 2),
         radius: 10,
         color: fontColor,
         fill_color: fontColor,
@@ -694,10 +714,10 @@ Page(
       const restartButtonHeight = restartTextLayout.height
 
       canvas.drawRect({
-        x1: (SCREEN_WIDTH - restartTextWidth) / 2 - 10,
-        y1: restartButtonY,
-        x2: (SCREEN_WIDTH + restartTextWidth) / 2 + 10,
-        y2: restartButtonY + restartButtonHeight,
+        x1: (SCREEN_WIDTH - restartTextWidth) / 2 - BUTTON_PADDING,
+        y1: restartButtonY - (BUTTON_PADDING / 2),
+        x2: (SCREEN_WIDTH + restartTextWidth) / 2 + BUTTON_PADDING,
+        y2: restartButtonY + restartButtonHeight + (BUTTON_PADDING / 2),
         radius: 10,
         color: FONT_COLORS.HIGHLIGHT,
         fill_color: FONT_COLORS.HIGHLIGHT
@@ -760,10 +780,10 @@ Page(
 
       // Draw the button's background rectangle
       canvas.drawRect({
-        x1: (SCREEN_WIDTH - resumeTextWidth) / 2 - 10,
-        y1: resumeButtonY,
-        x2: (SCREEN_WIDTH + resumeTextWidth) / 2 + 10,
-        y2: resumeButtonY + resumeButtonHeight,
+        x1: (SCREEN_WIDTH - resumeTextWidth) / 2 - BUTTON_PADDING,
+        y1: resumeButtonY - (BUTTON_PADDING / 2),
+        x2: (SCREEN_WIDTH + resumeTextWidth) / 2 + BUTTON_PADDING,
+        y2: resumeButtonY + resumeButtonHeight + (BUTTON_PADDING / 2),
         radius: 10,
         color: FONT_COLORS.HIGHLIGHT,
         fill_color: FONT_COLORS.HIGHLIGHT
@@ -969,7 +989,14 @@ onKey({
         // Duck state will be handled in updateTRex()
         return true;
       }
-    } else if (key === KEY_BACK && keyEvent === KEY_EVENT_CLICK) {
+    } else if (key === KEY_SELECT && keyEvent === KEY_EVENT_LONG_PRESS) {
+      if (!pageInstance) return true;
+      if (gameState === 'playing') {
+        return true;
+      }
+      return false;
+    }
+    else if (key === KEY_BACK && keyEvent === KEY_EVENT_CLICK) {
       if (pageInstance && (gameState === 'playing' || gameState === 'paused')) {
         pageInstance.togglePause();
         return true;
@@ -985,10 +1012,10 @@ onGesture({
     if (event === GESTURE_RIGHT) {
       if (pageInstance && (gameState === 'playing' || gameState === 'paused')) {
         pageInstance.togglePause();
-        return true;
+        return
       }
-      return false;
+      return
     }
-    return false;
-  },
+    return
+  }
 })
