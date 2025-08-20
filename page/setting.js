@@ -129,19 +129,19 @@ Page(
             }
 
             // Check for Scale Factor button click
-            const scaleFactorY = SCREEN_HEIGHT / 2 + 100;
-            const scaleFactorHeight = getTextWidthAndHeight(getText('scaleFactor'), TEXT_SIZES.OPTION).height;
-            if (x > SCREEN_WIDTH / 2 - 100 && x < SCREEN_WIDTH / 2 + 100 && y > scaleFactorY && y < scaleFactorY + scaleFactorHeight) {
-                if (SCALE_FACTOR === SCALE_FACTORS.NORMAL) {
-                    SCALE_FACTOR = SCALE_FACTORS.LARGE;
-                } else if (SCALE_FACTOR === SCALE_FACTORS.LARGE) {
-                    SCALE_FACTOR = SCALE_FACTORS.SMALL;
-                } else {
-                    SCALE_FACTOR = SCALE_FACTORS.NORMAL;
-                }
-                isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
-                this.render();
-            }
+            // const scaleFactorY = SCREEN_HEIGHT / 2 + 100;
+            // const scaleFactorHeight = getTextWidthAndHeight(getText('scaleFactor'), TEXT_SIZES.OPTION).height;
+            // if (x > SCREEN_WIDTH / 2 - 100 && x < SCREEN_WIDTH / 2 + 100 && y > scaleFactorY && y < scaleFactorY + scaleFactorHeight) {
+            //     if (SCALE_FACTOR === SCALE_FACTORS.NORMAL) {
+            //         SCALE_FACTOR = SCALE_FACTORS.LARGE;
+            //     } else if (SCALE_FACTOR === SCALE_FACTORS.LARGE) {
+            //         SCALE_FACTOR = SCALE_FACTORS.SMALL;
+            //     } else {
+            //         SCALE_FACTOR = SCALE_FACTORS.NORMAL;
+            //     }
+            //     isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
+            //     this.render();
+            // }
 
 
             // Check for Back button click (or a button to navigate back)
@@ -213,21 +213,21 @@ Page(
             });
 
             // Draw Scale Factor Toggle
-            let scaleFactorString = 'Normal';
-            if (SCALE_FACTOR === SCALE_FACTORS.SMALL) {
-                scaleFactorString = 'Small';
-            } else if (SCALE_FACTOR === SCALE_FACTORS.LARGE) {
-                scaleFactorString = 'Large';
-            }
-            const scaleFactorText = `${getText('scaleFactor')}: ${scaleFactorString}`;
-            const scaleFactorMetrics = getTextWidthAndHeight(scaleFactorText, TEXT_SIZES.OPTION * textSizeModifier);
-            canvas.drawText({
-                x: (SCREEN_WIDTH - scaleFactorMetrics.width) / 2,
-                y: SCREEN_HEIGHT / 2 + 100, // Position the new option below Font Size
-                text: scaleFactorText,
-                text_size: TEXT_SIZES.OPTION * textSizeModifier,
-                color: SCALE_FACTOR !== SCALE_FACTORS.NORMAL ? highlightColor : fontColor,
-            });
+            // let scaleFactorString = 'Normal';
+            // if (SCALE_FACTOR === SCALE_FACTORS.SMALL) {
+            //     scaleFactorString = 'Small';
+            // } else if (SCALE_FACTOR === SCALE_FACTORS.LARGE) {
+            //     scaleFactorString = 'Large';
+            // }
+            // const scaleFactorText = `${getText('scaleFactor')}: ${scaleFactorString}`;
+            // const scaleFactorMetrics = getTextWidthAndHeight(scaleFactorText, TEXT_SIZES.OPTION * textSizeModifier);
+            // canvas.drawText({
+            //     x: (SCREEN_WIDTH - scaleFactorMetrics.width) / 2,
+            //     y: SCREEN_HEIGHT / 2 + 100, // Position the new option below Font Size
+            //     text: scaleFactorText,
+            //     text_size: TEXT_SIZES.OPTION * textSizeModifier,
+            //     color: SCALE_FACTOR !== SCALE_FACTORS.NORMAL ? highlightColor : fontColor,
+            // });
 
 
             // Draw Back Button
