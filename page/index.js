@@ -238,11 +238,7 @@ Page(
 
     handleScreenRelease() {
       isScreenPressed = false
-      if (gameState === 'playing' && tRex.isDucking && !isSelectPressed) {
-        tRex.isDucking = false
-        tRex.height = 94 * SCALE_FACTOR
-        tRex.y = GROUND_Y
-      }
+      // Duck state will be handled in updateTRex()
     },
 
     pauseGame() {
@@ -358,19 +354,24 @@ Page(
 
     updateTRex() {
       // Handle ducking logic
-      if ((isSelectPressed || isScreenPressed) && !tRex.isJumping && !tRex.isDead && gameState === 'playing') {
-        const currentTime = Date.now()
-        if (currentTime - duckStartTime >= DUCK_DELAY) {
-          if (!tRex.isDucking) {
-            tRex.isDucking = true
-            tRex.height = 60 * SCALE_FACTOR // Reduced height when ducking
-            tRex.y = GROUND_Y + (34 * SCALE_FACTOR) // Adjust Y position for ducking
+      if (!tRex.isJumping && !tRex.isDead && gameState === 'playing') {
+        if (isSelectPressed || isScreenPressed) {
+          const currentTime = Date.now()
+          if (currentTime - duckStartTime >= DUCK_DELAY) {
+            if (!tRex.isDucking) {
+              tRex.isDucking = true
+              tRex.height = 60 * SCALE_FACTOR
+              tRex.y = GROUND_Y + (34 * SCALE_FACTOR)
+            }
+          }
+        } else {
+          // No input pressed - return to normal if ducking
+          if (tRex.isDucking) {
+            tRex.isDucking = false
+            tRex.height = 94 * SCALE_FACTOR
+            tRex.y = GROUND_Y
           }
         }
-      } else if (tRex.isDucking && !tRex.isJumping) {
-        tRex.isDucking = false
-        tRex.height = 94 * SCALE_FACTOR
-        tRex.y = GROUND_Y
       }
 
       tRex.velocityY += GRAVITY
@@ -379,7 +380,6 @@ Page(
         tRex.y = GROUND_Y
         tRex.velocityY = 0
         tRex.isJumping = false
-        tRex.isDucking = false
       }
       
       if (!tRex.isJumping && !tRex.isDucking && !tRex.isDead) {
@@ -966,11 +966,7 @@ onKey({
       if (!pageInstance) return true;
       if (gameState === 'playing') {
         isSelectPressed = false;
-        if (tRex.isDucking && !isScreenPressed) {
-          tRex.isDucking = false;
-          tRex.height = 94 * SCALE_FACTOR;
-          tRex.y = GROUND_Y;
-        }
+        // Duck state will be handled in updateTRex()
         return true;
       }
     } else if (key === KEY_BACK && keyEvent === KEY_EVENT_CLICK) {
