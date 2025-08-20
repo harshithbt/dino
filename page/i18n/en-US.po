@@ -1,0 +1,47 @@
+msgid "title"
+msgstr "DINO RUN"
+
+msgid "instructions"
+msgstr "Press to Start"
+
+msgid "highScoreText"
+msgstr "High Score:"
+
+msgid "startBtnTxt"
+msgstr "Start Game"
+
+msgid "settingBtnTxt"
+msgstr "Setting"
+
+msgid "gameOverText"
+msgstr "GAME OVER"
+
+msgid "scoreText"
+msgstr "Score:"
+
+msgid "newHighScoreMsg"
+msgstr "NEW HIGH SCORE!"
+
+msgid "restartTxt"
+msgstr "Tap to Restart"
+
+msgid "pauseText"
+msgstr "PAUSED"
+
+msgid "resumeText"
+msgstr "Resume"
+
+msgid "settingsTitle"
+msgstr "Settings"
+
+msgid "darkMode"
+msgstr "Dark Mode"
+
+msgid "fontSize"
+msgstr "Text Size"
+
+msgid "scaleFactor"
+msgstr "Scale Factor"
+
+msgid "back"
+msgstr "Back"
