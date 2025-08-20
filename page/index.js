@@ -8,7 +8,7 @@ import { getDeviceInfo, SCREEN_SHAPE_SQUARE } from '@zos/device'
 import { push } from '@zos/router'
 import { getTextLayout } from '@zos/ui'
 import { setStatusBarVisible } from '@zos/ui'
-import { onKey, KEY_SELECT, KEY_BACK, KEY_EVENT_CLICK, KEY_EVENT_LONG_PRESS } from '@zos/interaction'
+import { onKey, KEY_SELECT, KEY_BACK, KEY_EVENT_CLICK, KEY_EVENT_LONG_PRESS, KEY_EVENT_PRESS, KEY_EVENT_RELEASE } from '@zos/interaction'
 import { onGesture, GESTURE_RIGHT } from '@zos/interaction'
 
 const vis = new VisLog("index.js");
@@ -36,15 +36,19 @@ const FPS = 60
 const FRAME_DURATION = 1000 / FPS
 
 // Adjusted T-Rex game constants for better feel
-const GAME_SPEED = 6 * SCALE_FACTOR
-const GRAVITY = 0.6 * SCALE_FACTOR
-const JUMP_FORCE = -15 * SCALE_FACTOR
+const GAME_SPEED = 10 * SCALE_FACTOR
+const GRAVITY = 1.0 * SCALE_FACTOR
+const JUMP_FORCE = -18 * SCALE_FACTOR
 const GROUND_Y = SCREEN_HEIGHT - 120 * SCALE_FACTOR
 const T_REX_X = 80 * SCALE_FACTOR
 const CLOUD_SPAWN_RATE = 0.01
 const BASE_OBSTACLE_SPAWN_RATE = 0.01
 const SPEED_INCREMENT_SCORE_INTERVAL = 100
 const SPEED_INCREMENT = 1.0 * SCALE_FACTOR
+
+// Input state tracking
+let isSelectPressed = false
+let isScreenPressed = false
 
 // UI and Settings
 let isDarkMode = false
@@ -98,6 +102,10 @@ let clouds = []
 let groundOffset = 0
 let pageInstance = null
 
+// Duck state management
+let duckStartTime = 0
+const DUCK_DELAY = 200 // milliseconds before ducking starts
+
 Page(
   BasePage({
     build() {
@@ -135,7 +143,13 @@ Page(
       })
       canvas.addEventListener(event.CLICK_UP, (info) => {
         this.handleInput(info)
+        this.handleScreenRelease()
       })
+      
+      canvas.addEventListener(event.CLICK_DOWN, (info) => {
+        this.handleScreenPress(info)
+      })
+      
       this.startGameLoop()
       this.drawMenu()
     },
@@ -215,6 +229,22 @@ Page(
       }
     },
 
+    handleScreenPress(info) {
+      if (gameState === 'playing') {
+        isScreenPressed = true
+        duckStartTime = Date.now()
+      }
+    },
+
+    handleScreenRelease() {
+      isScreenPressed = false
+      if (gameState === 'playing' && tRex.isDucking) {
+        tRex.isDucking = false
+        tRex.height = 94 * SCALE_FACTOR
+        tRex.y = GROUND_Y
+      }
+    },
+
     pauseGame() {
       if (gameState === 'playing') {
         gameState = 'paused'
@@ -267,7 +297,7 @@ Page(
     },
 
     jump() {
-      if (!tRex.isJumping && !tRex.isDead) {
+      if (!tRex.isJumping && !tRex.isDead && !tRex.isDucking) {
         tRex.velocityY = JUMP_FORCE
         tRex.isJumping = true
         vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
@@ -327,6 +357,22 @@ Page(
     },
 
     updateTRex() {
+      // Handle ducking logic
+      if ((isSelectPressed || isScreenPressed) && !tRex.isJumping && !tRex.isDead && gameState === 'playing') {
+        const currentTime = Date.now()
+        if (currentTime - duckStartTime >= DUCK_DELAY) {
+          if (!tRex.isDucking) {
+            tRex.isDucking = true
+            tRex.height = 60 * SCALE_FACTOR // Reduced height when ducking
+            tRex.y = GROUND_Y + (34 * SCALE_FACTOR) // Adjust Y position for ducking
+          }
+        }
+      } else if (tRex.isDucking && !tRex.isJumping) {
+        tRex.isDucking = false
+        tRex.height = 94 * SCALE_FACTOR
+        tRex.y = GROUND_Y
+      }
+
       tRex.velocityY += GRAVITY
       tRex.y += tRex.velocityY
       if (tRex.y >= GROUND_Y) {
@@ -335,9 +381,13 @@ Page(
         tRex.isJumping = false
         tRex.isDucking = false
       }
+      
       if (!tRex.isJumping && !tRex.isDucking && !tRex.isDead) {
         tRex.animFrame = (tRex.animFrame + 0.3) % 2
+      } else if (tRex.isDucking && !tRex.isDead) {
+        tRex.animFrame = (tRex.animFrame + 0.3) % 2
       }
+      
       if (!tRex.isDead) {
         flyBird.animFrame = (flyBird.animFrame + 0.2) % 2
       }
@@ -386,13 +436,20 @@ Page(
         };
       } else {
         // Bird
-        const birdHeight = Math.random() < 0.5 ? 75 * SCALE_FACTOR : 100 * SCALE_FACTOR; // Two possible heights
+        // Dynamic bird heights like original Chrome Dino
+        const birdHeights = [
+          50 * SCALE_FACTOR,   // Low flying
+          75 * SCALE_FACTOR,   // Medium flying  
+          100 * SCALE_FACTOR,  // High flying
+          125 * SCALE_FACTOR   // Very high flying
+        ]
+        const randomHeight = birdHeights[Math.floor(Math.random() * birdHeights.length)]
         obstacle = {
           x: SCREEN_WIDTH,
           type: 'bird',
           width: 93 * SCALE_FACTOR,
           height: 62 * SCALE_FACTOR,
-          y: GROUND_Y - birdHeight,
+          y: GROUND_Y - randomHeight,
           image: 'Bird.png'
         };
       }
@@ -413,9 +470,9 @@ Page(
     checkCollisions() {
       const trexBox = {
         x: tRex.x + (15 * SCALE_FACTOR),
-        y: tRex.y - tRex.height + (3 * SCALE_FACTOR),
-        width: tRex.width - (30 * SCALE_FACTOR),
-        height: tRex.height - (10 * SCALE_FACTOR)
+        y: tRex.isDucking ? tRex.y - (60 * SCALE_FACTOR) + (3 * SCALE_FACTOR) : tRex.y - tRex.height + (3 * SCALE_FACTOR),
+        width: tRex.isDucking ? (118 * SCALE_FACTOR) - (30 * SCALE_FACTOR) : tRex.width - (30 * SCALE_FACTOR),
+        height: tRex.isDucking ? (60 * SCALE_FACTOR) - (10 * SCALE_FACTOR) : tRex.height - (10 * SCALE_FACTOR)
       }
       for (const obstacle of obstacles) {
         const obsBox = this.getObstacleHitbox(obstacle)
@@ -435,11 +492,12 @@ Page(
           height: obstacle.height
         }
       } else {
+        // Bird hitbox - slightly smaller for better gameplay
         return {
-          x: obstacle.x,
-          y: obstacle.y,
-          width: obstacle.width,
-          height: obstacle.height
+          x: obstacle.x + (5 * SCALE_FACTOR),
+          y: obstacle.y + (5 * SCALE_FACTOR),
+          width: obstacle.width - (10 * SCALE_FACTOR),
+          height: obstacle.height - (10 * SCALE_FACTOR)
         }
       }
     },
@@ -735,7 +793,7 @@ Page(
         } else {
           canvas.drawImage({
             x: x,
-            y: y - tRex.height + (3 * SCALE_FACTOR),
+            y: tRex.isDucking ? y - (60 * SCALE_FACTOR) + (3 * SCALE_FACTOR) : y - tRex.height + (3 * SCALE_FACTOR),
             w: tRex.width,
             h: tRex.height,
             image: 'DinoRun2.png',
@@ -762,17 +820,17 @@ Page(
         if (step === 0) {
           canvas.drawImage({
             x: x,
-            y: y - tRex.height + (3 * SCALE_FACTOR),
-            w: tRex.width,
-            h: tRex.height,
+            y: y - (60 * SCALE_FACTOR) + (3 * SCALE_FACTOR),
+            w: 118 * SCALE_FACTOR, // Duck sprites are wider
+            h: 60 * SCALE_FACTOR,  // Duck sprites are shorter
             image: 'DinoDuck1.png',
           })
         } else {
           canvas.drawImage({
             x: x,
-            y: y - tRex.height + (3 * SCALE_FACTOR),
-            w: tRex.width,
-            h: tRex.height,
+            y: y - (60 * SCALE_FACTOR) + (3 * SCALE_FACTOR),
+            w: 118 * SCALE_FACTOR, // Duck sprites are wider
+            h: 60 * SCALE_FACTOR,  // Duck sprites are shorter
             image: 'DinoDuck2.png',
           })
         }
@@ -863,9 +921,9 @@ Page(
     drawHitboxes() {
       const trexBox = {
         x: tRex.x + (15 * SCALE_FACTOR),
-        y: tRex.y - tRex.height + (3 * SCALE_FACTOR),
-        width: tRex.width - (30 * SCALE_FACTOR),
-        height: tRex.height - (10 * SCALE_FACTOR)
+        y: tRex.isDucking ? tRex.y - (60 * SCALE_FACTOR) + (3 * SCALE_FACTOR) : tRex.y - tRex.height + (3 * SCALE_FACTOR),
+        width: tRex.isDucking ? (118 * SCALE_FACTOR) - (30 * SCALE_FACTOR) : tRex.width - (30 * SCALE_FACTOR),
+        height: tRex.isDucking ? (60 * SCALE_FACTOR) - (10 * SCALE_FACTOR) : tRex.height - (10 * SCALE_FACTOR)
       }
       canvas.drawRect({
         x1: trexBox.x,
@@ -895,6 +953,20 @@ onKey({
       if (!pageInstance) return true;
       if (gameState === 'playing') {
         pageInstance.jump();
+        return true;
+      }
+    } else if (key === KEY_SELECT && keyEvent === KEY_EVENT_PRESS) {
+      if (!pageInstance) return true;
+      if (gameState === 'playing') {
+        isSelectPressed = true;
+        duckStartTime = Date.now();
+        return true;
+      }
+    } else if (key === KEY_SELECT && keyEvent === KEY_EVENT_RELEASE) {
+      if (!pageInstance) return true;
+      if (gameState === 'playing') {
+        isSelectPressed = false;
+        pageInstance.handleScreenRelease();
         return true;
       }
     } else if (key === KEY_BACK && keyEvent === KEY_EVENT_CLICK) {
