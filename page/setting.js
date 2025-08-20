@@ -5,10 +5,14 @@ import { createWidget, widget, event } from '@zos/ui';
 import { getDeviceInfo } from '@zos/device';
 import { getTextLayout } from '@zos/ui';
 import { setStatusBarVisible } from '@zos/ui';
-import { back } from '@zos/router'
+import { back } from '@zos/router';
+import { Vibrator } from '@zos/sensor'
 
 const vis = new VisLog("settings.js");
 vis.updateSettings({ visual_log_enabled: false });
+
+const vibrator = new Vibrator()
+const vibrationType = vibrator.getType()
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = getDeviceInfo();
 
@@ -17,13 +21,14 @@ function getTextWidthAndHeight(text, fontSize) {
         text_size: fontSize,
         text_width: 0,
         wrapped: 0
-    })
+    });
 }
 
 // UI and Settings
 let isDarkMode = false;
 let textSizeModifier = 1; // Default to 'Normal'
 let SCALE_FACTOR = 0.7; // Default scale factor for game elements
+let isVribrationEnabled = true; // Default vibration setting
 const TEXT_SIZES = {
     TITLE: 28,
     OPTION: 20,
@@ -62,6 +67,7 @@ Page(
             isDarkMode = app.globalData.isDarkMode || false;
             textSizeModifier = app.globalData.textSizeModifier || FONT_MODIFIERS.NORMAL;
             SCALE_FACTOR = app.globalData.scaleFactor || SCALE_FACTORS.NORMAL;
+            isVribrationEnabled = app.globalData.isVribrationEnabled !== undefined ? app.globalData.isVribrationEnabled : true;
 
             canvas = createWidget(widget.CANVAS, {
                 x: 0,
@@ -83,16 +89,27 @@ Page(
             app.globalData.isDarkMode = isDarkMode;
             app.globalData.textSizeModifier = textSizeModifier;
             app.globalData.scaleFactor = SCALE_FACTOR;
+            app.globalData.isVribrationEnabled = isVribrationEnabled;
         },
 
         handleInput(info) {
             const { x, y } = info;
+
+            // Check for Vibration button click
+            const vibrationY = SCREEN_HEIGHT / 2 - 80; // Positioned above Dark Mode
+            const vibrationHeight = getTextWidthAndHeight(getText('vibration'), TEXT_SIZES.OPTION).height;
+            if (x > SCREEN_WIDTH / 2 - 100 && x < SCREEN_WIDTH / 2 + 100 && y > vibrationY && y < vibrationY + vibrationHeight) {
+                isVribrationEnabled = !isVribrationEnabled;
+                isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
+                this.render();
+            }
 
             // Check for Dark Mode button click
             const darkModeY = SCREEN_HEIGHT / 2 - 20;
             const darkModeHeight = getTextWidthAndHeight(getText('darkMode'), TEXT_SIZES.OPTION).height;
             if (x > SCREEN_WIDTH / 2 - 100 && x < SCREEN_WIDTH / 2 + 100 && y > darkModeY && y < darkModeY + darkModeHeight) {
                 isDarkMode = !isDarkMode;
+                isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
                 this.render();
             }
 
@@ -107,6 +124,7 @@ Page(
                 } else {
                     textSizeModifier = FONT_MODIFIERS.NORMAL;
                 }
+                isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
                 this.render();
             }
 
@@ -121,6 +139,7 @@ Page(
                 } else {
                     SCALE_FACTOR = SCALE_FACTORS.NORMAL;
                 }
+                isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
                 this.render();
             }
 
@@ -129,7 +148,8 @@ Page(
             const backY = SCREEN_HEIGHT - 60;
             const backHeight = getTextWidthAndHeight(getText('back'), TEXT_SIZES.BUTTON).height;
             if (x > SCREEN_WIDTH / 2 - 50 && x < SCREEN_WIDTH / 2 + 50 && y > backY && y < backY + backHeight) {
-                back()
+                isVribrationEnabled && vibrator.start([{ type: vibrationType.GENTLE_SHORT, duration: 100 }])
+                back();
             }
         },
 
@@ -152,6 +172,17 @@ Page(
                 color: fontColor,
             });
             vis.log('Rendering Settings Page');
+
+            // Draw Vibration Toggle
+            const vibrationText = `${getText('vibration')}: ${isVribrationEnabled ? 'On' : 'Off'}`;
+            const vibrationMetrics = getTextWidthAndHeight(vibrationText, TEXT_SIZES.OPTION * textSizeModifier);
+            canvas.drawText({
+                x: (SCREEN_WIDTH - vibrationMetrics.width) / 2,
+                y: SCREEN_HEIGHT / 2 - 80, // Position above Dark Mode
+                text: vibrationText,
+                text_size: TEXT_SIZES.OPTION * textSizeModifier,
+                color: !isVribrationEnabled ? fontColor : highlightColor,
+            });
 
             // Draw Dark Mode Toggle
             const darkModeText = `${getText('darkMode')}: ${isDarkMode ? 'On' : 'Off'}`;
