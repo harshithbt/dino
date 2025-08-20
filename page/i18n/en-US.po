@@ -1,9 +1,6 @@
 msgid "title"
 msgstr "DINO RUN"
 
-msgid "instructions"
-msgstr "Press to Start"
-
 msgid "highScoreText"
 msgstr "High Score:"
 
@@ -33,6 +30,9 @@ msgstr "Resume"
 
 msgid "settingsTitle"
 msgstr "Settings"
+
+msgid "vibration"
+msgstr "Vibration"
 
 msgid "darkMode"
 msgstr "Dark Mode"
